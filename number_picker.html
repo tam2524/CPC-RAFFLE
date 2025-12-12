@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CPC Raffle Draw</title>
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f5f6fa;
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 260px;
+  background: #0a3d62;
+  color: white;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1000;
+}
+.sidebar.collapsed { width: 70px; }
+.sidebar-header { padding: 20px; font-size: 22px; font-weight: bold; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.2);}
+.menu-btn { background: none; border: none; color: white; font-size: 22px; cursor: pointer; padding: 10px 20px; text-align: left; }
+.sidebar.collapsed .label { display: none; }
+.sidebar-item { padding: 15px 20px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 10px;}
+.sidebar-item:hover { background: rgba(255,255,255,0.15);}
+
+.main { 
+  margin-left: 260px; 
+  padding: 20px; 
+  flex: 1; 
+  transition: margin-left 0.3s; 
+  display: flex; 
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+.main.collapsed { margin-left: 70px; }
+h1 { 
+  margin: 0; 
+  font-size: 28px; 
+  color: #0a3d62; 
+  text-align: center;
+}
+h2 { 
+  margin: 5px 0 15px 0; 
+  font-size: 20px; 
+  color: #3c6382; 
+  text-align: center; 
+}
+
+.buttons-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.entries-container {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+  overflow: hidden;
+  padding: 5px;
+  grid-auto-rows: 24px; /* Reduced height */
+}
+
+.entry {
+  background: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 3px;
+  font-weight: 600;
+  text-align: center;
+  padding: 0 3px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  user-select: none;
+  font-size: 0.7em; /* Smaller font size */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pick-btn {
+  padding: 10px;
+  font-size: 16px;
+  font-weight: bold;
+  background: #1e90ff;
+  color: white;
+  border: none;
+  flex: 1;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.pick-btn:hover {
+  background: #0c74d6;
+}
+.pick-btn.shuffle {
+  background: #10ac84;
+}
+.pick-btn.shuffle:hover {
+  background: #0e8c6d;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5);
+  justify-content: center; align-items: center;
+  z-index: 2000;
+}
+.modal-content {
+  background: white;
+  padding: 25px;
+  border-radius: 15px;
+  width: 420px;
+  max-width: 90%;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+.modal-content h3 { margin-top:0; color:#0a3d62;}
+.modal-content button { 
+  margin-top: 15px; 
+  padding:10px 15px; 
+  border:none; 
+  border-radius:8px; 
+  cursor:pointer; 
+  background:#1e90ff; 
+  color:white; 
+  font-weight:bold; 
+  transition:0.2s;
+  margin-right: 10px;
+}
+.modal-content button:hover { background:#0c74d6; }
+input[type=file], textarea { width: 100%; margin-top: 10px; padding: 10px; box-sizing: border-box; }
+
+.winners-list { 
+  margin-top: 15px; 
+  background:#e0f7fa; 
+  padding:15px; 
+  border-radius:8px; 
+  max-height:300px; 
+  overflow-y:auto; 
+}
+.winners-list div { 
+  padding:8px; 
+  margin-bottom:5px; 
+  background:white; 
+  border-radius:5px; 
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+}
+
+.highlight { 
+  background:#1e90ff !important; 
+  color:white !important; 
+  transition:0.2s; 
+  animation: pulse 0.5s ease-in-out;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar" id="sidebar">
+  <button class="menu-btn" onclick="toggleMenu()">☰</button>
+  <div class="sidebar-item" onclick="openImport()">📥 <span class="label">Import Entries</span></div>
+  <div class="sidebar-item" onclick="viewWinners()">🏆 <span class="label">View Winners</span></div>
+  <div class="sidebar-item" onclick="openReset()">🔄 <span class="label">Reset</span></div>
+</div>
+
+<div class="main" id="main">
+  <h1>CPC Employees Christmas Party</h1>
+  <h2>RAFFLE (MINOR PRIZES)</h2>
+  
+  <div class="buttons-container">
+    <button class="pick-btn" onclick="pickWinner()">PICK A WINNER</button>
+    <button class="pick-btn shuffle" onclick="shuffleEntries()">SHUFFLE NAMES</button>
+  </div>
+  
+  <div id="entries" class="entries-container"></div>
+</div>
+
+<div class="modal" id="importModal">
+  <div class="modal-content">
+    <h3>Import Entries</h3>
+    <textarea id="manualInput" rows="4" placeholder="Paste names here, one per line..."></textarea>
+    <input type="file" id="excelFile" accept=".xlsx" />
+    <button onclick="processImport()">Import</button>
+    <button onclick="closeImport()">Close</button>
+  </div>
+</div>
+
+<div class="modal" id="winnersModal">
+  <div class="modal-content">
+    <h3>Winners</h3>
+    <div id="winnersList" class="winners-list"></div>
+    <button onclick="closeWinners()">Close</button>
+  </div>
+</div>
+
+<div class="modal" id="winnerModal">
+  <div class="modal-content" id="winnerContent">
+    <h2> CONGRATULATIONS! </h2>
+    <p id="winnerName" style="font-size: 28px; font-weight:bold; color:#1e90ff;"></p>
+    <button onclick="closeWinner()">Close</button>
+  </div>
+</div>
+
+<div class="modal" id="resetModal">
+  <div class="modal-content">
+    <h3>Are you sure you want to reset?</h3>
+    <button onclick="resetAll()">Yes, Reset</button>
+    <button onclick="closeReset()">Cancel</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script>
+let entries = [];
+let winners = [];
+let highlightInterval;
+
+function toggleMenu() {
+  const sidebar = document.getElementById('sidebar');
+  const main = document.getElementById('main');
+  sidebar.classList.toggle('collapsed');
+  main.classList.toggle('collapsed');
+  setTimeout(renderEntries, 300); 
+}
+
+function openImport(){ document.getElementById('importModal').style.display='flex'; }
+function closeImport(){ document.getElementById('importModal').style.display='none'; }
+
+function viewWinners(){ 
+  document.getElementById('winnersModal').style.display='flex'; 
+  renderWinners(); 
+}
+function closeWinners(){ document.getElementById('winnersModal').style.display='none'; }
+
+function openReset(){ document.getElementById('resetModal').style.display='flex'; }
+function closeReset(){ document.getElementById('resetModal').style.display='none'; }
+
+function saveState(){
+  localStorage.setItem('entries', JSON.stringify(entries));
+  localStorage.setItem('winners', JSON.stringify(winners));
+}
+
+function loadState(){
+  const savedEntries = localStorage.getItem('entries');
+  const savedWinners = localStorage.getItem('winners');
+  
+  if (savedEntries) {
+    entries = JSON.parse(savedEntries);
+  } else {
+    entries = [
+      
+    ];
+  }
+  
+  if (savedWinners) {
+    winners = JSON.parse(savedWinners);
+  }
+  
+  renderEntries();
+}
+
+function calculateOptimalColumns() {
+  const containerWidth = document.getElementById('main').clientWidth - 40; 
+  const minColumnWidth = 140; 
+  
+  const maxColumns = Math.max(3, Math.floor(containerWidth / minColumnWidth));
+  
+  const estimatedColumns = Math.min(maxColumns, Math.ceil(Math.sqrt(entries.length * 2)));
+  
+  return Math.max(3, estimatedColumns);
+}
+
+function renderEntries() {
+  const container = document.getElementById('entries');
+  container.innerHTML = '';
+  
+  const columns = calculateOptimalColumns();
+  container.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+  
+  entries.forEach(e => {
+    let div = document.createElement('div');
+    div.className = 'entry';
+    div.innerText = e;
+    container.appendChild(div);
+  });
+  
+  autoFitToScreen();
+}
+
+function autoFitToScreen() {
+  const container = document.getElementById('entries');
+  const mainElement = document.getElementById('main');
+  const availableHeight = mainElement.clientHeight - 150; 
+  
+  const entryCount = entries.length;
+  const columns = parseInt(container.style.gridTemplateColumns.split('(')[1]) || 5;
+  const rows = Math.ceil(entryCount / columns);
+  const entryHeight = 24; 
+  
+  const totalHeightNeeded = rows * entryHeight + (rows - 1) * 2; 
+  
+  if (totalHeightNeeded > availableHeight) {
+    const scaleFactor = availableHeight / totalHeightNeeded;
+    
+    container.style.fontSize = `${Math.max(0.6, scaleFactor * 0.7)}em`;
+    container.style.gridAutoRows = `${Math.max(20, scaleFactor * 24)}px`;
+  }
+}
+
+function shuffleEntries() {
+  for (let i = entries.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [entries[i], entries[j]] = [entries[j], entries[i]];
+  }
+  renderEntries();
+  saveState();
+}
+
+async function pickWinner() {
+  if (entries.length === 0) { 
+    alert("No entries available."); 
+    return; 
+  }
+
+  const entryDivs = Array.from(document.querySelectorAll('.entry'));
+
+  for (let i = 0; i < 20; i++) {
+    entryDivs.forEach(e => e.classList.remove('highlight'));
+    const idx = Math.floor(Math.random() * entryDivs.length);
+    entryDivs[idx].classList.add('highlight');
+    await new Promise(r => setTimeout(r, 100));
+  }
+
+  entryDivs.forEach(e => e.classList.remove('highlight'));
+
+  let startIndex = Math.floor(Math.random() * entryDivs.length);
+  let currentIndex = startIndex;
+
+  entryDivs[currentIndex].classList.add('highlight');
+  await new Promise(r => setTimeout(r, 400));
+  for (let step = 0; step < 4; step++) {
+    entryDivs.forEach(e => e.classList.remove('highlight'));
+
+    let jump = Math.floor(Math.random() * 18) + 2; 
+    currentIndex = (currentIndex + jump) % entryDivs.length;
+
+    entryDivs[currentIndex].classList.add('highlight');
+    await new Promise(r => setTimeout(r, 450));
+  }
+
+  const winner = entries.splice(currentIndex, 1)[0];
+  winners.push(winner);
+
+  saveState();
+  renderEntries();
+  showWinner(winner);
+}
+
+
+function showWinner(name) {
+  document.getElementById('winnerName').innerText = name;
+  document.getElementById('winnerModal').style.display = 'flex';
+}
+
+function closeWinner() { 
+  document.getElementById('winnerModal').style.display = 'none'; 
+}
+
+function renderWinners() {
+  const list = document.getElementById('winnersList');
+  list.innerHTML = winners.map((w, i) => `<div>${i + 1}. ${w}</div>`).join('');
+}
+
+function resetAll() {
+  entries = []; 
+  winners = [];
+  renderEntries(); 
+  saveState(); 
+  closeReset();
+}
+
+function processImport() {
+  const manual = document.getElementById('manualInput').value.trim();
+  const excel = document.getElementById('excelFile').files[0];
+  
+  if (manual) {
+    entries = manual.split(/\n/).map(n => n.trim()).filter(n => n.length > 0);
+    renderEntries(); 
+    saveState(); 
+    closeImport(); 
+    return;
+  }
+  
+  if (excel) {
+    let reader = new FileReader();
+    reader.onload = function(e) {
+      let data = new Uint8Array(e.target.result);
+      let workbook = XLSX.read(data, {type: 'array'});
+      let sheet = workbook.Sheets[workbook.SheetNames[0]];
+      let rows = XLSX.utils.sheet_to_json(sheet, {header: 1});
+      
+      entries = [];
+      rows.forEach(row => {
+        if (row[0] && row[0].toString().trim().length > 0) {
+          entries.push(row[0].toString().trim());
+        }
+      });
+      
+      renderEntries(); 
+      saveState(); 
+      closeImport();
+    };
+    reader.readAsArrayBuffer(excel);
+  }
+}
+
+window.addEventListener('resize', function() {
+  renderEntries();
+});
+
+window.onclick = function(event) {
+  ['importModal', 'winnersModal', 'winnerModal', 'resetModal'].forEach(id => {
+    const modal = document.getElementById(id);
+    if (event.target === modal) {
+      modal.style.display = 'none';
+    }
+  });
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+  loadState();
+});
+</script>
+</body>
+</html>

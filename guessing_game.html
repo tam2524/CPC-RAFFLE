@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Guess Game</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            background-color: #e0f7fa;
+            color: #003366;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: #ff5722;
+            text-shadow: 2px 2px 4px #000000;
+        }
+
+        #currentTeamIndicator {
+            font-size: 1.5em;
+            margin: 20px;
+            color: #ff5722; /* Color for the current team indicator */
+        }
+
+        button {
+            background-color: #00509e;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 1.2em;
+            cursor: pointer;
+            margin: 10px;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+
+        button:hover {
+            background-color: #003366;
+            transform: scale(1.05);
+        }
+
+        #gameBoard {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); /* Adjusted minmax value */
+            gap: 10px; /* Reduced gap */
+            width: 80%;
+            margin: 20px auto;
+            padding: 20px;
+            border: 2px dashed #00509e;
+            border-radius: 15px;
+            background-color: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .card {
+            background-color: #003366;
+            color: white;
+            padding: 10px; /* Reduced padding */
+            font-size: 1.5em; /* Reduced font size */
+            cursor: pointer;
+            border-radius: 10px; /* Slightly reduced border radius */
+            transition: transform 0.3s, background-color 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .card:hover {
+            transform: scale(1.1);
+            background-color: #00509e;
+        }
+
+        .card.highlight {
+            background-color: #ffffff;
+            color: #003366;
+            font-weight: bold;
+            border: 2px solid #ff5722; /* Add a border to highlighted cards */
+        }
+
+        .team-panel {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }
+
+        .team {
+            padding: 20px;
+            background-color: #00509e;
+            color: white;
+            border-radius: 15px;
+            font-size: 1.5em;
+            flex: 1;
+            margin: 0 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .word-list {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: white;
+            color: #003366;
+            border-radius: 5px;
+            font-size: 1em;
+            text-align: left;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: #ffffff;
+            margin: 5% auto;
+            padding: 30px; /* Increased padding */
+            border: 2px solid #00509e;
+            border-radius: 15px;
+            width: 90%; /* Increased width */
+            max-width: 600px; /* Increased max-width */
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .close {
+            color: #00509e;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #ff5722;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        #modalText {
+            font-size: 2em;
+            margin: 20px 0;
+            color: #003366;
+            font-weight: bold;
+        }
+
+        #hintText {
+            font-size: 1.5em; /* Adjust font size for the hint */
+            margin-top: 10px; /* Space above the hint */
+            color: #848484; /* A lighter color for the hint */
+            font-style: italic; /* Italicize the hint for distinction */
+        }
+
+        #answerText {
+            font-size: 2.5em; /* Increased font size for the answer text */
+            margin: 20px 0;
+            color: #003366;
+            font-weight: bold;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            font-size: 1em;
+            border: 2px solid #00509e;
+            border-radius: 5px;
+            width: 80%;
+            margin: 10px 0;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between; /* Space between title and current team */
+            align-items: center; /* Center items vertically */
+            margin-bottom: 20px; /* Space below the header */
+        }
+
+        h1 {
+            margin: 0; /* Remove default margin */
+            color: #020092;
+            text-shadow: 2px 1px 2px #000000;
+            font-size: 2em; /* Adjust font size if needed */
+        }
+
+        #currentTeamIndicator {
+            font-size: 1.5em;
+            color: red;
+            font-size: 3em; /* Adjust font size if needed */
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>CPC Word Guess Game</h1>
+        <div id="currentTeamIndicator">Current Team: A</div>
+    </div>
+    <button onclick="startGame()">Pick a Word</button>
+    <div id="gameBoard"></div>
+
+    <div class="team-panel">
+        <div id="teamA" class="team">Team A: <span id="scoreA">0</span>
+            <div class="word-list" id="correctA">Correct: </div>
+            <div class="word-list" id="incorrectA">Incorrect: </div>
+        </div>
+        <div id="teamB" class="team">Team B: <span id="scoreB">0</span>
+            <div class="word-list" id="correctB">Correct: </div>
+            <div class="word-list" id="incorrectB">Incorrect: </div>
+        </div>
+    </div>
+
+    <!-- Modal for displaying the chosen word -->
+    <div id="wordModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <div id="modalText"></div>
+            <div id="hintText"></div> <!-- New div for the hint -->
+            <input type="text" id="userAnswer" placeholder="Enter your answer here" />
+            <button onclick="checkAnswer()">Submit Answer</button>
+            <button onclick="speakWord(selectedCard.dataset.word)">🔊 Hear Word</button>
+        </div>
+    </div>
+
+    <!-- Modal for displaying the correct answer -->
+    <div id="answerModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAnswerModal()">&times;</span>
+            <div id="answerText"></div>
+            <button onclick="speakWord(selectedCard.dataset.answer)">🔊 Hear Correct Answer</button>
+        </div>
+    </div>
+
+    <script>
+     const words = [
+    // Greetings
+    { german: "Hallo", tagalog: "Hello", english: "Hello", germanHint: "Hallo, wie geht es dir?", tagalogHint: "Hello, kumusta ka?" }, // Hello
+    { german: "Guten Morgen", tagalog: "Magandang umaga", english: "Good morning", germanHint: "Guten Morgen, wie hast du geschlafen?", tagalogHint: "Magandang umaga, paano ka natulog?" }, // Good morning
+    { german: "Wie geht es dir?", tagalog: "Kamusta ka?", english: "How are you?", germanHint: "Wie geht es dir heute?", tagalogHint: "Kamusta ka ngayon?" }, // How are you?
+
+    // Values
+    { german: "Ehrlichkeit", tagalog: "Katapatan", english: "Honesty", germanHint: "Ehrlichkeit ist eine wichtige Tugend.", tagalogHint: "Ang katapatan ay isang mahalagang birtud." }, // Honesty
+    { german: "Respekt", tagalog: "Paggalang", english: "Respect", germanHint: "Respekt ist die Grundlage jeder Beziehung.", tagalogHint: "Ang paggalang ay pundasyon ng bawat relasyon." }, // Respect
+    { german: "Verantwortung", tagalog: "Paninindigan", english: "Responsibility", germanHint: "Verantwortung ist wichtig für das Wachstum.", tagalogHint: "Mahalaga ang paninindigan para sa pag-unlad." }, // Responsibility
+
+    // Core Values
+    { german: "Glaube", tagalog: "Panampalataya", english: "Faith", germanHint: "Glaube gibt uns Hoffnung.", tagalogHint: "Ang panampalataya ay nagbibigay sa atin ng pag-asa." }, // Faith
+    { german: "Hoffnung", tagalog: "Pag-asa", english: "Hope", germanHint: "Hoffnung ist der Schlüssel zum Überleben.", tagalogHint: "Ang pag-asa ang susi sa kaligtasan." }, // Hope
+    { german: "Nächstenliebe", tagalog: "Kawanggawa", english: "Charity", germanHint: "Nächstenliebe ist wichtig in unserer Gesellschaft.", tagalogHint: "Mahalaga ang kawanggawa sa ating lipunan." }, // Charity
+    { german: "Exzellenz", tagalog: "Kagalingan", english: "Excellence", germanHint: "Exzellenz ist unser Ziel.", tagalogHint: "Ang kagalingan ang ating layunin." }, // Excellence
+
+    // Useful Common Words
+    { german: "Ich liebe dich", tagalog: "Mahal kita", english: "I love you", germanHint: "Ich liebe dich von ganzem Herzen.", tagalogHint: "Mahal kita ng buong puso." }, // I love you
+    { german: "Flagge", tagalog: "Watawat", english: "Flag", germanHint: "Die Flagge repräsentiert unser Land.", tagalogHint: "Ang watawat ay kumakatawan sa ating bansa." }, // Flag
+    { german: "schön", tagalog: "Maganda", english: "Beautiful", germanHint: "Das Wetter ist schön heute.", tagalogHint: "Maganda ang panahon ngayon." }, // Beautiful
+    { german: "gutaussehend", tagalog: "Gwapo", english: "Handsome", germanHint: "Er ist ein gutaussehender Mann.", tagalogHint: "Siya ay isang gwapo na lalaki." }, // Handsome
+    { german: "Freund", tagalog: "Kaibigan", english: "Friend", germanHint: "Mein Freund ist sehr nett.", tagalogHint: "Ang kaibigan ko ay napakabait." }, // Friend
+    { german: "Verbündete", tagalog: "Kakampi", english: "Teammate", germanHint: "Mein Verbündete hilft mir immer.", tagalogHint: "Ang aking kakampi ay laging tumutulong sa akin." }, // Teammate
+    { german: "Familie", tagalog: "Pamilya", english: "Family", germanHint: "Familie ist das Wichtigste.", tagalogHint: "Ang pamilya ang pinakamahalaga." }, // Family
+    { german: "Haus", tagalog: "Bahay", english: "House", germanHint: "Das Haus ist sehr groß.", tagalogHint: "Ang bahay ay napakalaki." }, // House
+    { german: " Essen", tagalog: "Pagkain", english: "Food", germanHint: "Das Essen ist sehr lecker.", tagalogHint: "Masarap ang pagkain." }, // Food
+    { german: "Wasser", tagalog: "Tubig", english: "Water", germanHint: "Ich trinke viel Wasser.", tagalogHint: "Uminom ako ng maraming tubig." }, // Water
+    { german: "Buch", tagalog: "Aklat", english: "Book", germanHint: "Ich lese ein interessantes Buch.", tagalogHint: "Nagbabasa ako ng isang kawili-wiling aklat." }, // Book
+    { german: "Liebe", tagalog: "Pag-ibig", english: "Love", germanHint: "Die Liebe ist das schönste Gefühl.", tagalogHint: "Ang pag-ibig ang pinakamagandang damdamin." }, // Love
+    { tagalog: "Alemanya", english: "Germany", tagalogHint: "Ang Alemania ay isang bansa sa Europa." }, // Germany
+    { german: "Frieden", tagalog: "Kapayapaan", english: "Peace", germanHint: "Frieden ist wichtig für die Menschheit.", tagalogHint: "Ang kapayapaan ay mahalaga para sa sangkatauhan." }, // Peace
+    { german: "Freundschaft", tagalog: "Pagkakaibigan", english: "Friendship", germanHint: "Freundschaft ist ein wertvolles Gut.", tagalogHint: "Ang pagkakaibigan ay isang mahalagang yaman." }, // Friendship
+    { german: "Glück", tagalog: "Kaligayahan", english: "Happiness", germanHint: "Glück ist der Schlüssel zum Leben.", tagalogHint: "Ang kaligayahan ang susi sa buhay." } // Happiness
+];
+        let selectedCard;
+        let currentTeam = 'A'; // Track the current team
+        let scores = { A: 0, B: 0 };
+        let correctWords = { A: [], B: [] };
+        let incorrectWords = { A: [], B: [] };
+        let guessedGermanWords = new Set(); // Track guessed German words
+        let guessedTagalogWords = new Set(); // Track guessed Tagalog words
+
+        function generateBoard() {
+            const gameBoard = document.getElementById("gameBoard");
+            gameBoard.innerHTML = "";
+
+            const availableWords = words.filter(word => {
+                if (currentTeam === 'A') {
+                    return !guessedGermanWords.has(word.german); // Team A guesses German words
+                } else {
+                    return !guessedTagalogWords.has(word.tagalog); // Team B guesses Tagalog words
+                }
+            });
+
+            availableWords.sort(() => 0.5 - Math.random());
+            availableWords.forEach(word => {
+                const card = document.createElement("div");
+                card.classList.add("card");
+                card.textContent = "?"; // Initially show a question mark
+                card.dataset.word = currentTeam === 'A' ? word.german : word.tagalog;
+                card.dataset.answer = currentTeam === 'A' ? word.tagalog : word.german;
+                gameBoard.appendChild(card);
+            });
+        }
+
+        function startGame() {
+            generateBoard();
+            pickNewWord();
+            updateCurrentTeamIndicator(); // Update the team indicator
+        }
+
+        function pickNewWord() {
+            const cards = Array.from(document.querySelectorAll(".card"));
+            let availableCards = cards.filter(card => !correctWords.A.includes(card.dataset.word) && !correctWords.B.includes(card.dataset.word));
+
+            if (availableCards.length === 0) {
+                alert("All words have been guessed!");
+                return;
+            }
+
+            // Highlight cards for 5 seconds
+            highlightCards(availableCards);
+            document.getElementById("userAnswer").value = ""; // Clear the input field
+        }
+
+        function highlightCards(cards) {
+            let highlightDuration = 3000; // 3 seconds
+            let highlightInterval = 150; // Change highlight every 150ms
+            let endTime = Date.now() + highlightDuration;
+
+            const highlightRandomCard = () => {
+                if (Date.now() < endTime) {
+                    // Remove highlight from all cards
+                    cards.forEach(card => card.classList.remove('highlight'));
+                    // Highlight a random card
+                    const randomIndex = Math.floor(Math.random() * cards.length);
+                    cards[randomIndex].classList.add('highlight');
+                    setTimeout(highlightRandomCard, highlightInterval);
+                } else {
+                    // After highlighting, reveal the selected word
+                    revealSelectedWord(cards);
+                }
+            };
+
+            highlightRandomCard();
+        }
+
+        function revealSelectedWord(cards) {
+    let randomIndex = Math.floor(Math.random() * cards.length);
+    selectedCard = cards[randomIndex];
+    document.getElementById("modalText").textContent = selectedCard.dataset.word;
+    
+    // Get the hint based on the selected word
+    const wordData = words.find(word => 
+        (currentTeam === 'A' && word.german === selectedCard.dataset.word) || 
+        (currentTeam === 'B' && word.tagalog === selectedCard.dataset.word)
+    );
+    
+   // Display the hint in the modal
+let hintText;
+if (currentTeam === 'A') {
+    hintText = wordData ? wordData.germanHint : "No hint available.";
+} else {
+    hintText = wordData ? wordData.tagalogHint : "No hint available.";
+}
+
+    
+    document.getElementById("hintText").innerHTML = `Hint: ${hintText}`; // Set hint text as HTML
+    
+    document.getElementById("wordModal").style.display = "block";
+    speakWord(selectedCard.dataset.word); // Speak the word immediately when revealed
+}
+
+
+function checkAnswer() {
+    const userAnswer = document.getElementById("userAnswer").value.trim();
+    const correctAnswer = selectedCard.dataset.answer;
+
+    // Get the English translation
+    const wordData = words.find(word => 
+        (currentTeam === 'A' && word.german === selectedCard.dataset.word) || 
+        (currentTeam === 'B' && word.tagalog === selectedCard.dataset.word)
+    );
+    const englishTranslation = wordData ? wordData.english : "No translation available.";
+
+    // Show the correct answer in the answer modal
+    document.getElementById("answerText").textContent = `Correct answer: ${correctAnswer} (English: ${englishTranslation})`;
+    document.getElementById("wordModal").style.display = "none";
+    document.getElementById("answerModal").style.display = "block";
+
+    // Update scores and word lists
+    if (userAnswer.toLowerCase() === correctAnswer.toLowerCase()) {
+        scores[currentTeam]++;
+        if (currentTeam === 'A') {
+            guessedGermanWords.add(selectedCard.dataset.word); // Add guessed German word to the set
+            correctWords.A.push(selectedCard.dataset.word); // Track correct words
+        } else {
+            guessedTagalogWords.add(selectedCard.dataset.word); // Add guessed Tagalog word to the set
+            correctWords.B.push(selectedCard.dataset.word); // Track correct words
+        }
+    } else {
+        // Handle incorrect answers if needed
+        if (currentTeam === 'A') {
+            incorrectWords.A.push(selectedCard.dataset.word); // Track incorrect words
+        } else {
+            incorrectWords.B.push(selectedCard.dataset.word); // Track incorrect words
+        }
+    }
+
+    // Update the score display
+    document.getElementById(`score${currentTeam}`).textContent = scores[currentTeam];
+    document.getElementById(`correct${currentTeam}`).textContent = `Correct: ${correctWords[currentTeam].join(", ")}`;
+    document.getElementById(`incorrect${currentTeam}`).textContent = `Incorrect: ${incorrectWords[currentTeam].join(", ")}`;
+
+    // Remove the selected card from the game board
+    selectedCard.remove();
+
+    // Switch teams
+    currentTeam = currentTeam === 'A' ? 'B' : 'A'; // Alternate between Team A and Team B
+    updateCurrentTeamIndicator(); // Update the team indicator
+
+    // Check if there are still cards left to play
+    const remainingCards = document.querySelectorAll(".card");
+    if (remainingCards.length === 0) {
+        alert("All words have been guessed!");
+    }
+}
+
+        function updateCurrentTeamIndicator() {
+            document.getElementById("currentTeamIndicator").textContent = `Current Team: ${currentTeam}`;
+        }
+
+        function closeModal() {
+            document.getElementById("wordModal").style.display = "none";
+            document.getElementById("userAnswer").value = "";
+        }
+
+        function closeAnswerModal() {
+            document.getElementById("answerModal").style.display = "none";
+        }
+
+        function pickAnotherWord() {
+            closeAnswerModal();
+            pickNewWord(); 
+        }
+
+        function speakWord(word) {
+            console.log("Speaking word:", word); 
+            const utterance = new SpeechSynthesisUtterance(word);
+            utterance.lang = (currentTeam === 'A') ? 'de-DE' : 'tl-PH'; 
+
+            const voices = speechSynthesis.getVoices();
+            if (currentTeam === 'A') {
+                const germanVoice = voices.find(voice => voice.lang === 'de-DE');
+                if (germanVoice) {
+                    utterance.voice = germanVoice;
+                }
+            } else {
+                const tagalogVoice = voices.find(voice => voice.lang === 'tl-PH');
+                if (tagalogVoice) {
+                    utterance.voice = tagalogVoice;
+                }
+            }
+
+            // Speak the word
+            speechSynthesis.speak(utterance);
+        }
+
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (event.target === modal) {
+                    modal.style.display = "none";
+                }
+            });
+        }
+
+        window.onload = function () {
+            showGameMechanics();
+        };
+
+        function showGameMechanics() {
+            let mechanicsModal = document.createElement("div");
+            mechanicsModal.id = "mechanicsModal";
+            mechanicsModal.classList.add("modal");
+            mechanicsModal.innerHTML = `
+                <div class="modal-content">
+                    <span class="close" onclick="closeMechanicsModal()">&times;</span>
+                    <h2>Game Mechanics</h2>
+                    <p>The game features 50 prompts with words in German and Tagalog.</p>
+                    <p><strong>Participants are divided into two teams:</strong></p>
+                    <ul style="text-align: left;">
+                        <li>Team A guesses the Tagalog word in German.</li>
+                        <li>Team B guesses the German word in Tagalog.</li>
+                    </ul>
+                    <p>An AI voice assistant reads the word aloud for an immersive experience.</p>
+                    <p>Players submit their answers, and the system instantly verifies if it's correct or incorrect.</p>
+                    <button onclick="closeMechanicsModal()">Got it!</button>
+                </div>
+            `;
+            document.body.appendChild(mechanicsModal);
+            mechanicsModal.style.display = "block";
+        }
+
+        function closeMechanicsModal() {
+            document.getElementById("mechanicsModal").style.display = "none";
+        }
+    </script>
+</body>
+
+</html>

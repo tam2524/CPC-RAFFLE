@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPC - MINOR PRIZES</title>
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+            background-color: #e0f7fa;
+            color: #003366;
+        }
+
+        h1 {
+            text-align: center;
+            color: #003366;
+            margin-top: 20px;
+            font-size: 2.5em;
+        }
+
+        h2 {
+            text-align: center;
+            color: #002373;
+            margin-top: 20px;
+            font-size: 1.5em;
+        }
+
+        #sidebar {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 250px;
+            height: 100%;
+            background-color: #ffffff;
+            border-right: 2px solid #003366;
+            padding: 20px;
+            transition: transform 0.3s ease;
+            transform: translateX(-100%);
+        }
+
+        #sidebar.active {
+            transform: translateX(0);
+        }
+
+        #toggleSidebar {
+            position: absolute;
+            left: 260px;
+            top: 20px;
+            cursor: pointer;
+        }
+
+        #wheel {
+            position: relative;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            overflow: hidden;
+            margin: 0 auto;
+            border: 5px solid #003366;
+            background-color: #ffffff;
+        }
+
+        .slice {
+            position: absolute;
+            width: 50%;
+            height: 50%;
+            background-color: #003366;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #fff;
+            border-radius: 5px;
+            transform-origin: 100% 100%;
+            transition: transform 0.5s;
+            opacity: 0.8;
+            font-size: 1.2em;
+        }
+
+        .slice:hover {
+            opacity: 1;
+        }
+
+        .highlight {
+            background-color: #ffffff;
+            color: #003366;
+            font-weight: bold;
+        }
+
+        #winnerDisplay {
+            font-size: 36px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #003366;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        button:hover {
+            background-color: #00509e;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: #ffffff;
+            margin: 5% auto;
+            padding: 40px;
+            border: 2px solid #003366;
+            width: 60%;
+            max-width: 800px;
+            text-align: center;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        #modalWinnerText {
+            font-size: 48px;
+            color: #003366;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #003366;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        #winnersList {
+            margin-top: 20px;
+            text-align: left;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 5px;
+        }
+
+        .blink {
+            animation: blink-animation 1s steps(5, start) infinite;
+        }
+
+        .box {
+            transition: transform 5s ease-out;
+        }
+
+        @keyframes blink-animation {
+            0% {
+                color: white;
+            }
+
+            50% {
+                color: blue;
+            }
+
+            100% {
+                color: white;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>CPC Employees Christmas Party</h2>
+    <h1>RAFFLE (MINOR PRIZES)</h1>
+    <button id="toggleSidebar" onclick="toggleSidebar()">Toggle Sidebar</button>
+    <div id="sidebar">
+        <select id="inputType" onchange="toggleInputFields()">
+            <option value="numbers">Use Numbers</option>
+            <option value="names">Use Names</option>
+        </select>
+        <div id="numberInputs">
+            <input type="number" id="minNumber" placeholder="Min (1)" min="1" max="300" />
+            <input type="number" id="maxNumber" placeholder="Max (300)" min="1" max="300" />
+        </div>
+        <div id="nameInput" style="display: none;">
+            <textarea id="namesList" placeholder="Enter names, one per line" rows="4" cols="50"
+                style="width: 100%; height: 100px; font-size: 16px; padding: 5px;"></textarea>
+        </div>
+        <button onclick="generateInputs()">Generate Entries</button>
+        <button onclick="pickWinner()">Pick a Winner</button>
+        <button onclick="openWinnersModal()">View Winners</button>
+    </div>
+    <div id="wheel"></div>
+    <!-- Modal for displaying the winner -->
+
+    <button class="spin" onclick="rotateFunction()">SPIN</button>
+    <div id="winnerModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <p id="modalWinnerText" style="font-size: 48px; color: #003366; font-weight: bold;">CONGRATULATIONS!</p>
+            <p id="modalWinnerNumber" class="blink" style="font-size: 64px; color: white; font-weight: bold;"></p>
+            <p class="blink" style="font-size: 24px; color: #ff0000;">YOU MAY CLAIM YOUR PRIZE NOW!</p>
+            <button id="removeButton" onclick="removeWinner()">Remove Winner</button>
+        </div>
+    </div>
+
+    <div id="winnersModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeWinnersModal()">&times;</span>
+            <h2>Winners List</h2>
+            <div id="winnersList"></div>
+        </div>
+    </div>
+
+    <script>
+        let numbers = [];
+        let highlightInterval;
+        let currentWinner;
+        let winners = [];
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('active');
+        }
+
+        function rotateFunction() {
+            var min = 1024;
+            var max = 9999;
+            var deg = Math.floor(Math.random() * (max - min)) + min;
+            var box = document.getElementById('box');
+            box.style.transform = "rotate(" + deg + "deg)";
+
+
+            setTimeout(function () {
+                var currentDeg = deg % 360;
+                box.style.transform = "rotate(" + currentDeg + "deg)";
+            }, 5000);
+        }
+        function generateInputs() {
+            const inputType = document.getElementById('inputType').value;
+            const min = parseInt(document.getElementById('minNumber').value);
+            const max = parseInt(document.getElementById('maxNumber').value);
+            const namesList = document.getElementById('namesList').value;
+
+            if (inputType === 'numbers') {
+                if (isNaN(min) || isNaN(max) || min < 1 || max > 300 || min >= max) {
+                    alert('Please enter valid minimum and maximum values where 1 ≤ Min < Max ≤ 300.');
+                    return;
+                }
+
+                numbers = [];
+                for (let i = min; i <= max; i++) {
+                    numbers.push(i);
+                }
+            } else if (inputType === 'names') {
+                if (!namesList) {
+                    alert("Please enter names, one per line.");
+                    return;
+                }
+                const names = namesList.split('\n').map(name => name.trim());
+                numbers = names.filter(name => name);
+            }
+
+            displayWheel();
+        }
+
+        function toggleInputFields() {
+            const inputType = document.getElementById('inputType').value;
+            const numberInputs = document.getElementById('numberInputs');
+            const nameInput = document.getElementById('nameInput');
+
+            if (inputType === 'names') {
+                numberInputs.style.display = 'none';
+                nameInput.style.display = 'block';
+            } else {
+                numberInputs.style.display = 'block';
+                nameInput.style.display = 'none';
+            }
+        }
+
+        function displayWheel() {
+            const wheel = document.getElementById('wheel');
+            wheel.innerHTML = '';
+            const sliceCount = numbers.length;
+            const angle = 360 / sliceCount;
+
+            numbers.forEach((item, index) => {
+                const slice = document.createElement('div');
+                slice.className = 'slice';
+                slice.style.transform = `rotate(${angle * index}deg)`;
+                slice.innerText = item;
+                wheel.appendChild(slice);
+            });
+        }
+
+        function pickWinner() {
+            if (numbers.length === 0) {
+                alert('Please generate numbers before picking a winner!');
+                return;
+            }
+
+            const slices = document.querySelectorAll('.slice');
+            slices.forEach(slice => slice.classList.remove('highlight'));
+
+            let highlightCount = 0;
+            highlightInterval = setInterval(() => {
+                slices.forEach(slice => {
+                    slice.classList.remove('highlight');
+                });
+
+                const randomIndex = Math.floor(Math.random() * numbers.length);
+                slices[randomIndex].classList.add('highlight');
+
+                highlightCount++;
+                if (highlightCount >= 30) {
+                    clearInterval(highlightInterval);
+                    revealWinner(slices, randomIndex);
+                }
+            }, 100);
+        }
+
+        function revealWinner(slices, winnerIndex) {
+            const winner = numbers[winnerIndex];
+            currentWinner = winner;
+            winners.push(winner);
+
+            const modalWinnerNumber = document.getElementById('modalWinnerNumber');
+            modalWinnerNumber.innerText = `${winner}`;
+
+            openModal();
+
+            slices.forEach(slice => {
+                slice.classList.remove('highlight');
+            });
+            slices[winnerIndex].classList.add('highlight');
+
+            updateWinnersList();
+        }
+
+        function openModal() {
+            const modal = document.getElementById('winnerModal');
+            modal.style.display = "block";
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('winnerModal');
+            modal.style.display = "none";
+        }
+
+        function removeWinner() {
+            numbers = numbers.filter(num => num !== currentWinner);
+            displayWheel();
+            closeModal();
+            updateWinnersList();
+        }
+
+        function openWinnersModal() {
+            const winnersModal = document.getElementById('winnersModal');
+            winnersModal.style.display = "block";
+            updateWinnersList();
+        }
+
+        function closeWinnersModal() {
+            const winnersModal = document.getElementById('winnersModal');
+            winnersModal.style.display = "none";
+        }
+
+        function updateWinnersList() {
+            const winnersList = document.getElementById('winnersList');
+            winnersList.innerHTML = winners.map(winner => `<div class="brick">${winner}</div>`).join('');
+        }
+
+        window.onclick = function (event) {
+            const winnerModal = document.getElementById('winnerModal');
+            const winnersModal = document.getElementById('winnersModal');
+            if (event.target === winnerModal) {
+                closeModal();
+            } else if (event.target === winnersModal) {
+                closeWinnersModal();
+            }
+        }
+    </script>
+
+</body>
+
+</html>
